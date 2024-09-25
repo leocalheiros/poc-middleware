@@ -1,0 +1,56 @@
+﻿spring:
+  application:
+    name: pocmiddleware
+  data:
+    mongodb:
+      host: localhost
+      port: 27017
+      database: testjava
+    redis:
+      host: localhost
+      port: 6379
+azure:
+  servicebus:
+    connection-string:
+uappi-settings:
+  hub:
+    url: "https://omni.wapstore.com.br/omni-api/v1"
+    app-token: ""
+    sellers:
+      "":
+        keys:
+          api-key: ""
+          secret-key: ""
+  platform:
+    url: "https://app.mobiis.uappi.dev.br/api/v2"
+    app-token: ""
+    keys:
+      api-key: ""
+      secret-key: ""
+integration-settings:
+  updateStock:
+    queueName: ""
+    timerPeriod: 6000
+    type: "STOCKUPDATE"
+    batchLimit: 100
+  updateProductPrice:
+    queueName: ""
+    timerPeriod: 6000
+    type: "PRODUCTPRICEUPDATE"
+    batchLimit: 100
+  updateOrderStatus:
+    queueName: ""
+    timerPeriod: 1000
+    type: "UPDATEORDERSTATUS"
+    batchLimit: 1
+  updateRetailerCredit:
+    queueName: ""
+    timerPeriod: 4000
+    type: "UPDATERETAILERCREDIT"
+    batchLimit: 1
+    hash: "credito"
+  saveRecommendationList:
+    queueName: ""
+    timerPeriod: 1000
+    type: "WISHLISTINTEGRATION"
+    batchLimit: 1
