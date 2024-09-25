@@ -2,10 +2,12 @@ package com.leocalheiros.pocmiddleware.infra.services.hub;
 
 import com.leocalheiros.pocmiddleware.application.dtos.responses.DefaultResponse;
 import com.leocalheiros.pocmiddleware.application.dtos.responses.UpdateProductPriceResponse;
+import com.leocalheiros.pocmiddleware.config.CircuitBreakerSettings;
 import com.leocalheiros.pocmiddleware.domain.models.AuthorizationToken;
 import com.leocalheiros.pocmiddleware.domain.models.uappi.SellerSettings;
 import com.leocalheiros.pocmiddleware.domain.models.uappi.TokenResponse;
 import com.leocalheiros.pocmiddleware.domain.models.uappi.UappiSettings;
+import com.leocalheiros.pocmiddleware.infra.resilience.ResilientApiClientBase;
 import feign.FeignException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,21 +16,25 @@ import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
 
 @Service
-public class UappiHubServiceImpl {
+public class UappiHubServiceImpl extends ResilientApiClientBase {
     private final UappiHubService uappiHubService;
     private final StringRedisTemplate redisTemplate;
     private final UappiSettings uappiSettings;
     private final Logger logger = LoggerFactory.getLogger(UappiHubServiceImpl.class);
 
-    public UappiHubServiceImpl(UappiHubService uappiHubService, StringRedisTemplate redisTemplate, UappiSettings uappiSettings) {
+    public UappiHubServiceImpl(UappiHubService uappiHubService,
+                               StringRedisTemplate redisTemplate,
+                               UappiSettings uappiSettings) {
         this.uappiHubService = uappiHubService;
         this.redisTemplate = redisTemplate;
         this.uappiSettings = uappiSettings;
     }
 
     public DefaultResponse updateProductPrice(UpdateProductPriceResponse payload, String documentNumber) {
-        String token = getToken(documentNumber);
-        return uappiHubService.updateProductPrice(token, payload);
+        return ExecuteGenericHandling(() -> {
+            String token = getToken(documentNumber);
+            return uappiHubService.updateProductPrice(token, payload);
+        });
     }
 
     private String getToken(String documentNumber) {
@@ -49,7 +55,7 @@ public class UappiHubServiceImpl {
         AuthorizationToken tokenPayload = new AuthorizationToken(sellerSettings.getKeys().getApiKey(),
                 sellerSettings.getKeys().getSecretKey());
         TokenResponse tokenResponse = uappiHubService.getToken(tokenPayload);
-        if(tokenResponse == null) {
+        if (tokenResponse == null) {
             return "";
         }
 

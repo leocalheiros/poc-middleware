@@ -38,6 +38,18 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    // Resilience4j core module
+    implementation 'io.github.resilience4j:resilience4j-core:1.7.1'
+
+    // CircuitBreaker module
+    implementation 'io.github.resilience4j:resilience4j-circuitbreaker:1.7.1'
+
+    // Retry module
+    implementation 'io.github.resilience4j:resilience4j-retry:1.7.1'
+
+    // Vavr module (opcional, usado para Try, Option, etc.)
+    implementation 'io.vavr:vavr:0.10.3'
 }
 
 dependencyManagement {
