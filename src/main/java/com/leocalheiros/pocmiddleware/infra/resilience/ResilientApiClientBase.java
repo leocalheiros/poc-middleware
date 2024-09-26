@@ -13,6 +13,8 @@ import io.vavr.control.Try;
 
 import java.net.HttpURLConnection;
 import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.concurrent.Callable;
 import java.util.function.Supplier;
 
@@ -21,11 +23,13 @@ import static io.vavr.API.println;
 public abstract class ResilientApiClientBase {
     protected Retry retryPolicy;
     protected CircuitBreaker circuitBreaker;
+    protected CircuitBreaker circuitBreakerHalfOpen;
     private int halfOpenFailures;
 
     protected ResilientApiClientBase() {
         createRetryPolicy();
         createCircuitBreakerPolicy();
+        createHalfOpenPolicy();
     }
 
     private void createRetryPolicy() {
@@ -47,18 +51,27 @@ public abstract class ResilientApiClientBase {
 
         retryPolicy = Retry.of("retryPolicy", retryConfig);
         retryPolicy.getEventPublisher().onRetry(event ->
-                println("Attempt " + event.getNumberOfRetryAttempts() +
+                println(GetDatetimeNow() + " - Attempt " + event.getNumberOfRetryAttempts() +
                         " failed. Retrying in " + event.getWaitInterval().getSeconds() +
                         " seconds..."));
     }
 
     private void createCircuitBreakerPolicy() {
-        CircuitBreakerConfig circuitBreakerConfig = CircuitBreakerConfig.custom()
+//        CircuitBreakerConfig circuitBreakerConfig = CircuitBreakerConfig.custom()
+//                .failureRateThreshold(50)
+//                .waitDurationInOpenState(Duration.ofSeconds(60))
+//                .slidingWindowSize(3)
+//                .recordException(ex -> ex instanceof FeignException || ex instanceof HttpRequestException || ex instanceof Exception)
+//                .build();
+
+        CircuitBreakerConfig circuitBreakerConfig = CircuitBreakerConfig
+                .custom()
                 .failureRateThreshold(50)
                 .waitDurationInOpenState(Duration.ofSeconds(60))
                 .slidingWindowSize(3)
-                .recordException(ex -> ex instanceof FeignException || ex instanceof HttpRequestException || ex instanceof Exception)
-                .build();
+                .automaticTransitionFromOpenToHalfOpenEnabled(true)
+                .permittedNumberOfCallsInHalfOpenState(3)
+                .recordException(ex -> ex instanceof FeignException || ex instanceof HttpRequestException || ex instanceof Exception).build();
 
         circuitBreaker = CircuitBreaker.of("circuitBreaker", circuitBreakerConfig);
         circuitBreaker.getEventPublisher()
@@ -73,28 +86,49 @@ public abstract class ResilientApiClientBase {
                 });
     }
 
+    private void createHalfOpenPolicy() {
+        CircuitBreakerConfig circuitBreakerConfig = CircuitBreakerConfig.custom()
+                .failureRateThreshold((float) (1.0 * 1 / 5))
+                .waitDurationInOpenState(Duration.ofSeconds(60))
+                .slidingWindowSize(3)
+                .recordException(ex -> ex instanceof FeignException || ex instanceof HttpRequestException || ex instanceof Exception)
+                .build();
+
+        circuitBreakerHalfOpen = CircuitBreaker.of("circuitBreaker", circuitBreakerConfig);
+        circuitBreakerHalfOpen.getEventPublisher()
+                .onStateTransition(event -> {
+                    if (event.getStateTransition() == CircuitBreaker.StateTransition.OPEN_TO_HALF_OPEN) {
+                        if (halfOpenFailures < 1) return;
+                        println(GetDatetimeNow() + " - Half-Open circuit failed " + halfOpenFailures + " times and will be reopened.");
+                    }
+                });
+    }
+
     private void onBreak(IntervalFunction duration) {
         long waitDurationInMillis = duration.apply(1);
         long waitDurationInSeconds = Duration.ofMillis(waitDurationInMillis).getSeconds();
-        println("Circuit opened for " + waitDurationInSeconds + " seconds due to failures.");
+        println(GetDatetimeNow() + " - Circuit opened for " + waitDurationInSeconds + " seconds due to failures.");
     }
 
     private void onReset() {
-        println("Circuit closed again, operating normally.");
+        println(GetDatetimeNow() + " - Circuit closed again, operating normally.");
         halfOpenFailures = 0;
     }
 
     private void onHalfOpen() {
-        println("Circuit in Half-Open state, testing connectivity...");
+        println(GetDatetimeNow() + " - Circuit in Half-Open state, testing connectivity...");
         halfOpenFailures = 0;
     }
 
     protected <T> T executeWithResilience(Supplier<T> action) {
         // Callable<T> decorated = CircuitBreaker.decorateCallable(circuitBreaker, Retry.decorateCallable(retryPolicy, action::get));
-        Callable<T> decorated = Retry.decorateCallable(retryPolicy, CircuitBreaker.decorateCallable(circuitBreaker, action::get));
+        Callable<T> decorated = Retry.decorateCallable(retryPolicy,
+                CircuitBreaker.decorateCallable(circuitBreaker,
+                        CircuitBreaker.decorateCallable(circuitBreakerHalfOpen, action::get)
+                ));
 
         return Try.ofCallable(decorated)
-                .getOrElseThrow(throwable -> new RuntimeException("Operation failed after retries"));
+                .getOrElseThrow(throwable -> new RuntimeException(GetDatetimeNow() + " - Operation failed after retries"));
     }
 
     protected <T extends DefaultResponse> T ExecuteGenericHandling(Supplier<T> action) {
@@ -119,5 +153,11 @@ public abstract class ResilientApiClientBase {
             }
             return response;
         }
+    }
+
+    private String GetDatetimeNow() {
+        LocalDateTime now = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/M/yyyy HH:mm:ss");
+        return now.format(formatter);
     }
 }
