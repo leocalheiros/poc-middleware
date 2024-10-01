@@ -13,7 +13,7 @@ import com.leocalheiros.pocmiddleware.domain.models.AzureServiceBusSettings;
 import com.leocalheiros.pocmiddleware.domain.models.Integration;
 import com.leocalheiros.pocmiddleware.domain.models.IntegrationSettings;
 import com.leocalheiros.pocmiddleware.infra.repository.BaseMongoRepository;
-import com.leocalheiros.pocmiddleware.infra.services.hub.UappiHubServiceImpl;
+import com.leocalheiros.pocmiddleware.infra.services.hub.impl.UappiHubServiceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;

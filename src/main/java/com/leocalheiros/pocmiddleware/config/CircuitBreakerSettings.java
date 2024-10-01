@@ -3,17 +3,19 @@ package com.leocalheiros.pocmiddleware.config;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 @Setter
 @Getter
-@Configuration
-@ConfigurationProperties(prefix = "circuit-breaker")
+@Component
+@ConfigurationProperties(prefix = "resilience4j.circuitbreaker.instances.circuit-breaker-default")
 public class CircuitBreakerSettings {
-    private int retryCount;
-    private int failureThreshold;
-    private int failurePeriod;
-    private int closedTimeout;
-    private int halfOpenTestRequestCount;
-    private int halfOpenFailureThreshold;
+    private int slidingWindowSize;
+    private float failureRateThreshold;
+    private int waitDurationInOpenState;
+    private int permittedNumberOfCallsInHalfOpenState;
+    private boolean automaticTransitionFromOpenToHalfOpenEnabled;
+    private List<Class<? extends Throwable>> recordException;
 }

@@ -54,3 +54,34 @@ integration-settings:
     timerPeriod: 1000
     type: "WISHLISTINTEGRATION"
     batchLimit: 1
+resilience4j:
+  circuitbreaker:
+    instances:
+      circuit-breaker-default:
+        sliding-window-size: 3
+        failure-rate-threshold: 60
+        automatic-transition-from-open-to-half-open-enabled: true
+        wait-duration-in-open-state: 60
+        permitted-number-of-calls-in-half-open-state: 3
+        record-exception:
+          - feign.FeignException
+          - com.azure.core.exception.HttpRequestException
+          - java.lang.Exception
+      circuit-breaker-half-open:
+        sliding-window-size: 3
+        failure-rate-threshold: 20
+        automatic-transition-from-open-to-half-open-enabled: true
+        wait-duration-in-open-state: 60
+        permitted-number-of-calls-in-half-open-state: 3
+        record-exception:
+          - feign.FeignException
+          - com.azure.core.exception.HttpRequestException
+          - java.lang.Exception
+  retry:
+    instances:
+      retry-policy:
+        max-attempts: 5
+        wait-duration: 2
+        retry-exception:
+          - feign.FeignException
+          - com.azure.core.exception.HttpRequestException

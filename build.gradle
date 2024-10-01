@@ -7,6 +7,17 @@ plugins {
 group = 'com.leocalheiros'
 version = '0.0.1-SNAPSHOT'
 
+def profile = findProperty('spring.profiles.active') ?: System.getProperty('spring.profiles.active', 'default')
+
+bootRun {
+    systemProperty 'spring.profiles.active', profile
+    manifest {
+        attributes(
+                'Implementation-Version': version
+        )
+    }
+}
+
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)
@@ -32,6 +43,8 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation "org.springframework.boot:spring-boot-starter-actuator"
+    implementation "org.springframework.boot:spring-boot-starter-aop"
     implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
     implementation 'com.azure:azure-messaging-servicebus:7.13.3'
     compileOnly 'org.projectlombok:lombok'
@@ -40,13 +53,11 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
     // Resilience4j core module
-    implementation 'io.github.resilience4j:resilience4j-core:1.7.1'
-
+    implementation 'io.github.resilience4j:resilience4j-core:2.2.0'
     // CircuitBreaker module
-    implementation 'io.github.resilience4j:resilience4j-circuitbreaker:1.7.1'
-
+    implementation 'io.github.resilience4j:resilience4j-circuitbreaker:2.2.0'
     // Retry module
-    implementation 'io.github.resilience4j:resilience4j-retry:1.7.1'
+    implementation 'io.github.resilience4j:resilience4j-retry:2.2.0'
 
     // Vavr module (opcional, usado para Try, Option, etc.)
     implementation 'io.vavr:vavr:0.10.3'
