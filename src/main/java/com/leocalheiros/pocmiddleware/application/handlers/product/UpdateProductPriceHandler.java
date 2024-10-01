@@ -47,12 +47,12 @@ public class UpdateProductPriceHandler extends BaseBatchHandler<UpdateProductPri
 
     @Scheduled(fixedRateString = "#{@integrationSettings.updateProductPrice.timerPeriod}")
     public void scheduledTask() {
-        logger.info("Scheduled task executed.");
+        logger.info("Update product price scheduled task executed");
         super.onTimerComplete();
     }
 
     @Override
-    protected void messageHandler(ServiceBusReceivedMessageContext context) {
+    public void messageHandler(ServiceBusReceivedMessageContext context) {
         String messageBody = context.getMessage().getBody().toString();
         try {
             UpdateProductPriceRequest dto = objectMapper.readValue(messageBody, UpdateProductPriceRequest.class);
